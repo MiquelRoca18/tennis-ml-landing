@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tennis ML – Confirmación</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 24px;
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+    h1 { font-size: 1.5rem; margin: 0 0 8px; color: #f8fafc; }
+    p { margin: 0 0 20px; color: #94a3b8; line-height: 1.5; font-size: 15px; }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    .error { color: #f87171; }
+    form { text-align: left; margin-top: 24px; }
+    label { display: block; margin-bottom: 6px; color: #cbd5e1; font-size: 14px; }
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: #3b82f6;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #2563eb; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .success { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="loading" class="icon">⏳</div>
+    <div id="content" style="display: none;">
+      <div id="success-msg"></div>
+      <form id="password-form" style="display: none;">
+        <label for="new-password">Nueva contraseña (mínimo 6 caracteres)</label>
+        <input type="password" id="new-password" placeholder="Contraseña" minlength="6" required />
+        <button type="submit" id="submit-password">Guardar contraseña</button>
+      </form>
+    </div>
+    <p id="error-msg" class="error" style="display: none;"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    // Clave PÚBLICA (segura en el HTML). Nunca pongas la clave secreta (sb_secret_...) ni service_role.
+    // Dónde: Supabase → proyecto → Project Settings (engranaje) → API.
+    //   - Project URL → SUPABASE_URL
+    //   - Clave "Publishable" (sb_publishable_...) O pestaña "Legacy API Keys" → anon public → SUPABASE_ANON_KEY
+    var SUPABASE_URL = 'https://vgwwiwsefkhheywafwho.supabase.co';
+    var SUPABASE_ANON_KEY = 'sb_publishable_xGdapB1OT5wl4aBcsw6stg_L54q6Cn3';
+
+    function parseHash() {
+      var hash = window.location.hash.slice(1);
+      var params = {};
+      hash.split('&').forEach(function(pair) {
+        var i = pair.indexOf('=');
+        if (i > 0) {
+          var k = decodeURIComponent(pair.slice(0, i));
+          var v = decodeURIComponent(pair.slice(i + 1));
+          params[k] = v;
+        }
+      });
+      return params;
+    }
+
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'none';
+      var el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function showSuccess(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('success-msg').innerHTML = '<div class="icon success">✓</div><h1>' + msg + '</h1><p>Abre la app Tennis ML e inicia sesión con tu cuenta.</p>';
+      document.getElementById('password-form').style.display = 'none';
+      document.getElementById('error-msg').style.display = 'none';
+    }
+
+    function init() {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.indexOf('YOUR_') !== -1 || SUPABASE_ANON_KEY.indexOf('YOUR_') !== -1) {
+        showError('Configura SUPABASE_URL y SUPABASE_ANON_KEY en este archivo (auth/callback/index.html) con los valores de tu proyecto Supabase.');
+        return;
+      }
+
+      var params = parseHash();
+      var accessToken = params.access_token;
+      var refreshToken = params.refresh_token;
+      var type = params.type;
+      var errorDesc = params.error_description || params.error;
+
+      if (errorDesc) {
+        showError('Error: ' + (typeof errorDesc === 'string' ? errorDesc : decodeURIComponent(errorDesc)));
+        return;
+      }
+
+      if (!accessToken || !refreshToken) {
+        showError('No se recibieron datos. Usa el enlace que te enviamos por correo (confirmación o restablecer contraseña).');
+        return;
+      }
+
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        showError('No se pudo cargar Supabase. Comprueba la conexión.');
+        return;
+      }
+      var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      }).then(function(result) {
+        if (result.error) {
+          showError(result.error.message);
+          return;
+        }
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+
+        if (type === 'recovery') {
+          document.getElementById('success-msg').innerHTML = '<div class="icon">🔐</div><h1>Nueva contraseña</h1><p>Introduce la nueva contraseña para tu cuenta.</p>';
+          document.getElementById('password-form').style.display = 'block';
+          document.getElementById('password-form').onsubmit = function(e) {
+            e.preventDefault();
+            var password = document.getElementById('new-password').value.trim();
+            if (password.length < 6) {
+              document.getElementById('error-msg').textContent = 'Mínimo 6 caracteres';
+              document.getElementById('error-msg').style.display = 'block';
+              return;
+            }
+            var btn = document.getElementById('submit-password');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+            supabase.auth.updateUser({ password: password }).then(function(updateResult) {
+              if (updateResult.error) {
+                document.getElementById('error-msg').textContent = updateResult.error.message;
+                document.getElementById('error-msg').style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Guardar contraseña';
+                return;
+              }
+              showSuccess('Contraseña actualizada');
+              btn.disabled = false;
+              btn.textContent = 'Guardar contraseña';
+            });
+          };
+        } else {
+          showSuccess('Correo confirmado');
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
