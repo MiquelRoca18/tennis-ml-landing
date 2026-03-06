@@ -52,9 +52,39 @@ Guarda el archivo.
    - o `https://tu-sitio.netlify.app/auth/callback`
 4. **Save**.
 
-## 5. Configurar la app (Expo)
+## 5. Logo en los correos (Tenly)
 
-En el proyecto de la app (`tennis-ml-frontend`), en tu `.env` (o variables de entorno), define:
+Para que los emails de Supabase (confirmar correo y restablecer contraseña) muestren el logo de Tenly:
+
+1. **Consigue un PNG del logo**  
+   Usa el logo que tienes en la app (`tennis-ml-frontend/assets/images/tenly-logo.svg`). Exporta o convierte a PNG (por ejemplo desde Canva, o con cualquier herramienta que permita “exportar como PNG”). Tamaño recomendado: unos 200–300 px de ancho, fondo transparente si es posible.
+
+2. **Pon el archivo en esta carpeta**  
+   Guarda el PNG con el nombre **`tenly-logo.png`** en la **raíz** de `tennis-ml-landing` (mismo nivel que `index.html`), por ejemplo:
+   ```
+   tennis-ml-landing/
+   ├── index.html
+   ├── tenly-logo.png   ← aquí
+   └── auth/
+       └── callback/
+           └── index.html
+   ```
+
+3. **Vuelve a desplegar**  
+   - Si la landing está conectada a un repo en Vercel/Netlify: haz commit del nuevo `tenly-logo.png`, push, y el deploy se hará solo.  
+   - Si despliegas con Vercel CLI: desde la carpeta `tennis-ml-landing` ejecuta `npx vercel --prod` (o `vercel` para preview).
+
+4. **Comprueba la URL**  
+   Abre en el navegador:  
+   `https://TU-URL-DE-VERCEL.vercel.app/tenly-logo.png`  
+   (sustituye por la URL real de tu proyecto). Si ves el logo, los correos lo cargarán bien.
+
+5. **Plantillas de correo**  
+   Las plantillas en `tennis-ml-frontend/supabase/email-templates/` ya usan la URL del logo. Si tu landing tiene otra URL (por ejemplo un dominio propio), edita en esas plantillas la línea del `<img src="...">` y pon tu URL base + `/tenly-logo.png`.
+
+## 6. Configurar la app (Expo)
+
+En el proyecto de la app (`tennis-ml-frontend`), en tu archivo `.env` (o variables de entorno), define:
 
 ```env
 EXPO_PUBLIC_AUTH_REDIRECT_URL=https://tu-proyecto.vercel.app/auth/callback
@@ -70,6 +100,6 @@ Sustituye por la URL real de tu landing (Vercel o Netlify). Así, al registrarse
 | Vercel o Netlify | Desplegar la carpeta `tennis-ml-landing` |
 | Supabase → URL Configuration | Site URL = base de la landing; Redirect URLs = `.../auth/callback` |
 | App `.env`      | `EXPO_PUBLIC_AUTH_REDIRECT_URL=https://.../auth/callback` |
+| Logo en correos | Añadir `tenly-logo.png` en la raíz de `tennis-ml-landing` y redesplegar |
 
-Después de esto, al hacer clic en “Confirmar correo” o “Restablecer contraseña” del email se abrirá la landing, se completará el flujo en el navegador y se mostrará el mensaje de éxito.
-# tennis-ml-landing
+Después de esto, al hacer clic en “Confirmar correo” o “Restablecer contraseña” del email se abrirá la landing, se completará el flujo en el navegador y se mostrará el mensaje de éxito. Si añades `tenly-logo.png` y redespliegas, ese logo aparecerá también en los correos.
